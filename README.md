@@ -10,6 +10,10 @@ A conversational AI agent that fetches and displays news from New York Times RSS
 - Supports multiple news categories (Technology, Business, Science, etc.)
 - Clean, responsive web interface
 
+## Demo
+![live-demo](https://github.com/user-attachments/assets/2e1ab699-004f-457a-bab2-c386dc731424)
+
+
 ## Prerequisites
 
 - .NET 7.0 or later
