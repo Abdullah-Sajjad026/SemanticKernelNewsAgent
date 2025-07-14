@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>News AI Agent</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --secondary: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --error: #f72585;
+            --warning: #f8961e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+            flex: 1;
+        }
+
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        #chat-header {
+            padding: 1rem;
+            background-color: var(--light);
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #session-info {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        #session-id {
+            font-family: monospace;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        #chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 1.2rem;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 2px 5px rgba(67, 97, 238, 0.2);
+        }
+
+        .agent-message {
+            align-self: flex-start;
+            background-color: var(--light);
+            color: var(--dark);
+            padding: 0.8rem 1.2rem;
+            border-radius: 18px 18px 18px 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .news-item {
+            background-color: white;
+            border-left: 4px solid var(--secondary);
+            padding: 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .news-item:hover {
+            transform: translateX(3px);
+        }
+
+        .news-date {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .news-date::before {
+            content: "📅";
+            margin-right: 0.3rem;
+        }
+
+        .news-category {
+            display: inline-block;
+            background-color: var(--secondary);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+        }
+
+        .news-headline {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0.5rem 0;
+        }
+
+        .news-summary {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 1rem;
+        }
+
+        .news-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .news-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .news-link::after {
+            content: "→";
+            margin-left: 0.3rem;
+            transition: transform 0.2s;
+        }
+
+        .news-link:hover::after {
+            transform: translateX(3px);
+        }
+
+        #input-area {
+            display: flex;
+            padding: 1rem;
+            background-color: var(--light);
+            border-top: 1px solid #eee;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border: 2px solid #ddd;
+            border-radius: 24px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        #message-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        #send-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            margin-left: 0.8rem;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #send-button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        #send-button:active {
+            transform: translateY(0);
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.8rem 1.2rem;
+            background-color: var(--light);
+            border-radius: 18px;
+            color: #666;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            align-items: center;
+            height: 1rem;
+            margin-left: 0.5rem;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            margin: 0 2px;
+            background-color: #999;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1.4s infinite both;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-4px);
+            }
+        }
+
+        .error-message {
+            color: var(--error);
+            background-color: rgba(247, 37, 133, 0.1);
+            border-left: 4px solid var(--error);
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .suggestion-chip {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion-chip:hover {
+            background-color: rgba(67, 97, 238, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            #app {
+                padding: 0.5rem;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            #chat-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>News AI Agent</h1>
+    <p class="subtitle">Get the latest news from New York Times - Just ask for any category (Technology, Business,
+        Science, etc.)</p>
+</header>
+
+<div id="app">
+    <div id="chat-container">
+        <div id="chat-header">
+            <div>News Assistant</div>
+            <div id="session-info">Session: <span id="session-id"></span></div>
+        </div>
+
+        <div id="chat-messages"></div>
+
+        <div id="input-area">
+            <input autocomplete="off" id="message-input" placeholder="Ask for news (e.g. 'technology news')"
+                   type="text">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Generate or retrieve session ID
+    let sessionId = localStorage.getItem('newsAgentSessionId') ||
+        'sess-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    localStorage.setItem('newsAgentSessionId', sessionId);
+    document.getElementById('session-id').textContent = sessionId;
+
+    // Initial greeting with suggestions
+    addMessage('agent', {
+        text: 'Hello! I can fetch the latest news for you from New York Times. Try asking for any of these categories:',
+        suggestions: ['technology', 'business', 'science', 'health', 'world', 'politics']
+    });
+
+    // Add message to chat
+    function addMessage(sender, content) {
+        const chatMessages = document.getElementById('chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+
+        if (sender === 'user') {
+            messageDiv.textContent = content;
+            chatMessages.appendChild(messageDiv);
+        } else {
+            if (content.error) {
+                messageDiv.classList.add('error-message');
+                messageDiv.textContent = content.error;
+            } else if (content.newsItems && content.newsItems.length > 0) {
+                const heading = document.createElement('div');
+                heading.textContent = `Here are the latest ${content.newsItems[0].category || 'news'} stories:`;
+                messageDiv.appendChild(heading);
+
+                content.newsItems.forEach(news => {
+                    const newsDiv = document.createElement('div');
+                    newsDiv.className = 'news-item';
+
+                    newsDiv.innerHTML = `
+                            <div class="news-date">
+                                <span class="news-category">${news.category || 'General'}</span>
+                                ${news.date || ''}
+                            </div>
+                            ${news.headline ? `<div class="news-headline">${news.headline}</div>` : ''}
+                            ${news.summary ? `<div class="news-summary">${news.summary}</div>` : ''}
+                            ${news.url ? `<a href="${news.url}" target="_blank" class="news-link">Read full article</a>` : ''}
+                        `;
+
+                    messageDiv.appendChild(newsDiv);
+                });
+            } else if (content.text) {
+                messageDiv.textContent = content.text;
+
+                if (content.suggestions) {
+                    const suggestionsDiv = document.createElement('div');
+                    suggestionsDiv.className = 'suggestions';
+
+                    content.suggestions.forEach(suggestion => {
+                        const chip = document.createElement('div');
+                        chip.className = 'suggestion-chip';
+                        chip.textContent = suggestion;
+                        chip.addEventListener('click', () => {
+                            document.getElementById('message-input').value = `${suggestion} news`;
+                            sendMessage();
+                        });
+                        suggestionsDiv.appendChild(chip);
+                    });
+
+                    messageDiv.appendChild(suggestionsDiv);
+                }
+            }
+        }
+
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Show typing indicator
+    function showTypingIndicator() {
+        const chatMessages = document.getElementById('chat-messages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message agent-message typing-indicator';
+        typingDiv.innerHTML = 'Thinking <div class="typing-dots"><span></span><span></span><span></span></div>';
+        typingDiv.id = 'typingIndicator';
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Hide typing indicator
+    function hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typingIndicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+
+    // Parse news response from API
+    function parseNewsResponse(responseText) {
+        try {
+            // First try to parse as JSON
+            if (typeof responseText === 'string') {
+                const jsonMatch = responseText.match(/\{.*\}/s);
+                if (jsonMatch) {
+                    const jsonData = JSON.parse(jsonMatch[0]);
+                    if (jsonData.newsItems) return jsonData.newsItems;
+                }
+            }
+
+            // Fallback to regex parsing
+            const newsItems = [];
+            const itemRegex = /📰 (.+?) \| (.+?)[\s\S]+?• Headline: (.+?)[\s\S]+?• Summary: (.+?)(?:[\s\S]+?• Read more: (.+?))?[\s\S]+?━━━━━━━━━━━━━━━━━━━━━━━━━━━━/g;
+
+            let match;
+            while ((match = itemRegex.exec(responseText)) !== null) {
+                newsItems.push({
+                    category: match[1]?.trim(),
+                    date: match[2]?.trim(),
+                    headline: match[3]?.trim(),
+                    summary: match[4]?.trim(),
+                    url: match[5]?.trim()
+                });
+            }
+
+            return newsItems;
+        } catch (e) {
+            console.error("Error parsing news:", e);
+            return [];
+        }
+    }
+
+    // Send message to API
+    async function sendMessage() {
+        const input = document.getElementById('message-input');
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessage('user', message);
+        input.value = '';
+        showTypingIndicator();
+
+        const ChatApiURL = "https://localhost:7131/api/Chat";
+
+        try {
+            const response = await fetch(ChatApiURL, {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sessionId: sessionId,
+                    message: message
+                })
+            });
+
+            hideTypingIndicator();
+
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("API Response:", data);
+
+            // Handle different response formats
+            if (data.reply) {
+                const newsItems = parseNewsResponse(data.reply);
+
+                if (newsItems.length > 0) {
+                    addMessage('agent', {
+                        newsItems: newsItems
+                    });
+                } else {
+                    addMessage('agent', {
+                        text: data.reply,
+                        suggestions: ['technology', 'business', 'science']
+                    });
+                }
+            } else if (data.newsItems) {
+                addMessage('agent', {
+                    newsItems: data.newsItems
+                });
+            } else {
+                addMessage('agent', {
+                    text: "I found some news, but couldn't display it properly",
+                    error: true
+                });
+            }
+        } catch (error) {
+            hideTypingIndicator();
+            addMessage('agent', {
+                error: `⚠️ Failed to get news: ${error.message}`
+            });
+            console.error('API Error:', error);
+        }
+    }
+
+    // Event listeners
+    document.getElementById('send-button').addEventListener('click', sendMessage);
+    document.getElementById('message-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>
+</body>
+</html>
